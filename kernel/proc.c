@@ -219,6 +219,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
+  list_del(&proc->node);
   sched();
   panic("zombie exit");
 }
