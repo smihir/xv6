@@ -5,6 +5,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 int TIME_SLICE[NQUEUES] = {1, 2, 4, 8};
 
@@ -168,6 +169,13 @@ fork(void)
  
   pid = np->pid;
   np->state = RUNNABLE;
+
+  // place the process in Highest pririty Queue
+  np->priority = 0;
+  np->currticks = 0;
+  memset(np->ticks, 0, sizeof(np->ticks));
+  list_add_end(&np->node, &ptable.q[np->priority]);
+
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
 }
@@ -461,11 +469,24 @@ procdump(void)
 void
 decpriority(struct proc* p)
 {
-  acquire(&ptable.lock);
+  acquire(&ptable.lock);  //DOC: yieldlock
   list_del(&p->node);
-  p->priority--;
+  // priority 0 is the highest priority
+  p->priority++;
   list_add_end(&ptable.q[p->priority], &p->node);
   release(&ptable.lock);
 }
 
+void
+procinfo(struct pstat* stat)
+{
+  struct proc* p;
+  int i;
 
+  for(p = ptable.proc, i = 0; p < &ptable.proc[NPROC]; p++, i++){
+      stat->inuse[i] = p->state == UNUSED ? 0 : 1;
+      stat->pid[i] = p->pid;
+      stat->priority[i] = p->priority;
+      memmove(stat->ticks[i], p->ticks, sizeof(p->ticks));
+  }
+}

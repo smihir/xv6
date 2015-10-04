@@ -77,7 +77,7 @@ struct proc {
   volatile int pid;            // Process ID
   int priority;                // current priority level
   int currticks;               // ticks current priority level
-  int ticks[4];                // Total number of ticks at each priority
+  int ticks[NQUEUES];                // Total number of ticks at each priority
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process

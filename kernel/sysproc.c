@@ -94,5 +94,12 @@ sys_uptime(void)
 int
 sys_getpinfo(void)
 {
+  struct pstat *stat;
+
+  if(argptr(0, (char **)&stat, sizeof(struct pstat)) < 0)
+    return -1;
+
+  procinfo(stat);
+
   return 0;
 }

@@ -103,7 +103,8 @@ trap(struct trapframe *tf)
     proc->ticks[proc->priority]++;
     proc->currticks++;
     if (proc->currticks > TIME_SLICE[proc->priority]){
-      decpriority(proc);
+      if (proc->priority < (NQUEUES - 1))
+        decpriority(proc);
       yield();
     }
   }
