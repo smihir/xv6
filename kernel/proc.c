@@ -395,8 +395,13 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan) {
       p->state = RUNNABLE;
+      //Requirement: When process wakes up it should
+      //be in front of the queue
+      list_del(&p->node);
+      list_add_start(&ptable.q[p->priority], &p->node);
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -470,11 +475,14 @@ procdump(void)
 void
 decpriority(struct proc* p)
 {
-  acquire(&ptable.lock);  //DOC: yieldlock
+  acquire(&ptable.lock);
   list_del(&p->node);
+
   // priority 0 is the highest priority
   p->priority++;
+  p->currticks = 0;
   list_add_end(&ptable.q[p->priority], &p->node);
+
   release(&ptable.lock);
 }
 

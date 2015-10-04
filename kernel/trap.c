@@ -102,7 +102,7 @@ trap(struct trapframe *tf)
   if(proc && proc->state == RUNNING && tf->trapno == T_IRQ0+IRQ_TIMER){
     proc->ticks[proc->priority]++;
     proc->currticks++;
-    if (proc->currticks > TIME_SLICE[proc->priority]){
+    if (proc->currticks >= TIME_SLICE[proc->priority]){
       if (proc->priority < (NQUEUES - 1))
         decpriority(proc);
       yield();
