@@ -1,5 +1,8 @@
 #ifndef _PROC_H_
 #define _PROC_H_
+
+#include "list.h"
+
 // Segments in proc->gdt.
 // Also known to bootasm.S and trapasm.S
 #define SEG_KCODE 1  // kernel code
@@ -9,6 +12,8 @@
 #define SEG_UDATA 5  // user data+stack
 #define SEG_TSS   6  // this process's task state
 #define NSEGS     7
+
+#define NQUEUES   4
 
 // Per-CPU state
 struct cpu {
@@ -25,9 +30,12 @@ struct cpu {
   struct proc *proc;           // The currently-running process.
 };
 
+struct list_node;
+
 extern struct cpu cpus[NCPU];
 extern int ncpu;
 
+extern int TIME_SLICE[NQUEUES];
 // Per-CPU variables, holding pointers to the
 // current cpu and to the current process.
 // The asm suffix tells gcc to use "%gs:0" to refer to cpu
@@ -61,11 +69,15 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
+  struct list_node node;       // next process in the queue
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
   enum procstate state;        // Process state
   volatile int pid;            // Process ID
+  int priority;                // current priority level
+  int currticks;               // ticks current priority level
+  int ticks[4];                // Total number of ticks at each priority
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process

@@ -6,8 +6,11 @@
 #include "proc.h"
 #include "spinlock.h"
 
+int TIME_SLICE[NQUEUES] = {1, 2, 4, 8};
+
 struct {
   struct spinlock lock;
+  struct list_node q[NQUEUES];
   struct proc proc[NPROC];
 } ptable;
 
@@ -22,7 +25,11 @@ static void wakeup1(void *chan);
 void
 pinit(void)
 {
+  int i;
+
   initlock(&ptable.lock, "ptable");
+  for(i = 0; i < 4; i++)
+    list_init(&ptable.q[i]);
 }
 
 // Look in the process table for an UNUSED proc.
@@ -98,6 +105,12 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+
+  // place the process in Highest pririty Queue
+  p->priority = 0;
+  p->currticks = 0;
+  memset(p->ticks, 0, sizeof(p->ticks));
+  list_add_end(&p->node, &ptable.q[p->priority]);
   release(&ptable.lock);
 }
 
@@ -351,6 +364,8 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   proc->chan = chan;
   proc->state = SLEEPING;
+  //reset the ticks at current priority level
+  proc->currticks = 0;
   sched();
 
   // Tidy up.
@@ -441,6 +456,16 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+void
+decpriority(struct proc* p)
+{
+  acquire(&ptable.lock);
+  list_del(&p->node);
+  p->priority--;
+  list_add_end(&ptable.q[p->priority], &p->node);
+  release(&ptable.lock);
 }
 
 
