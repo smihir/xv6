@@ -329,7 +329,6 @@ scheduler(void)
           node = &p->node;
           if (node == &ptable.q[i])
               panic("invalid node");
-          priority1 = p->priority;
 
           // Switch to chosen process.  It is the process's job
           // to release ptable.lock and then reacquire it
