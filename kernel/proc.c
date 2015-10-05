@@ -174,7 +174,9 @@ fork(void)
   np->priority = 0;
   np->currticks = 0;
   memset(np->ticks, 0, sizeof(np->ticks));
+  acquire(&ptable.lock);
   list_add_end(&np->node, &ptable.q[np->priority]);
+  release(&ptable.lock);
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
@@ -267,6 +269,40 @@ wait(void)
   }
 }
 
+struct proc *
+findrunnable(int i, struct list_node *node)
+{
+  struct list_node *head, *nnode, *inode;
+  struct proc *p;
+
+  head = &ptable.q[i];
+  nnode = head->next;
+
+  //List is empty
+  if (nnode == head) {
+    return NULL;
+  }
+
+  for (inode = node->next; inode != head; inode = inode->next){
+    p = ((struct proc*)inode);
+    if(p->state != RUNNABLE)
+      continue;
+    return p;
+  }
+
+  //No node found from node --> head, try to find between
+  //head --> to node, remember this is a circular LL
+  for (inode = head->next; inode != node; inode = inode->next){
+    p = ((struct proc*)inode);
+    if(p->state != RUNNABLE)
+      continue;
+    return p;
+  }
+
+  //No runnable node found!
+  return NULL;
+}
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -277,7 +313,9 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p = NULL;
+  struct list_node *node;
+  int i, done = 0;
 
   for(;;){
     // Enable interrupts on this processor.
@@ -285,22 +323,35 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+    for(i = 0; i < NQUEUES; ){
+        for (node = &ptable.q[i], p = findrunnable(i, node);
+             p != NULL; p = findrunnable(i, node)){
+          node = &p->node;
+          if (node == &ptable.q[i])
+              panic("invalid node");
+          priority1 = p->priority;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      swtch(&cpu->scheduler, proc->context);
-      switchkvm();
+          // Switch to chosen process.  It is the process's job
+          // to release ptable.lock and then reacquire it
+          // before jumping back to us.
+          proc = p;
+          switchuvm(p);
+          p->state = RUNNING;
+          swtch(&cpu->scheduler, proc->context);
+          switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      proc = 0;
+          done = 1;
+
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          proc = 0;
+
+          // After we have run a process at priority n, break out of
+          // the loop. Maybe a higher priority process is pending
+          break;
+        }
+        done == 1 ? i = 0 : i++;
+        done = 0;
     }
     release(&ptable.lock);
 
@@ -400,7 +451,7 @@ wakeup1(void *chan)
       //Requirement: When process wakes up it should
       //be in front of the queue
       list_del(&p->node);
-      list_add_start(&ptable.q[p->priority], &p->node);
+      list_add_start(&p->node, &ptable.q[p->priority]);
     }
 }
 
@@ -481,7 +532,7 @@ decpriority(struct proc* p)
   // priority 0 is the highest priority
   p->priority++;
   p->currticks = 0;
-  list_add_end(&ptable.q[p->priority], &p->node);
+  list_add_end(&p->node, &ptable.q[p->priority]);
 
   release(&ptable.lock);
 }
