@@ -384,6 +384,8 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
   proc->currticks = 0;
+  list_del(&proc->node);
+  list_add_end(&proc->node, &ptable.q[proc->priority]);
   sched();
   release(&ptable.lock);
 }
