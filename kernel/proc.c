@@ -383,6 +383,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   proc->state = RUNNABLE;
+  proc->currticks = 0;
   sched();
   release(&ptable.lock);
 }
