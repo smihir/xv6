@@ -1,0 +1,44 @@
+\documentclass[8pt]{article}
+
+\usepackage{fullpage}
+\usepackage[margin=.7in]{geometry}
+\usepackage{epic}
+\usepackage{eepic}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{color}
+
+\begin{document}
+\hfill \small{\today} \\
+\begin{center}{\bf
+\center{CS 537 - Project 2b Graph2}
+\center{Rashi Jalan, Mihir Shete}
+}\end{center}
+\begin{center}{\includegraphics[scale=0.5]{mlfq2.png}} \\
+{Figure 1} \\
+\end{center}
+
+\textbf{Figure 1} represents the workloads of 2 processes p4 and p5.
+Both processes p4 and p5 run an infinite while loop (see \textit{spin()}) and we can see that both of them are downgraded to the lowest priority level and are run in round-robin fashion.
+
+%Stackoverflow http://stackoverflow.com/questions/4439605/c-source-code-in-latex-document
+\lstset{
+  language=C,                % choose the language of the code
+  numbers=left,                   % where to put the line-numbers
+  stepnumber=1,                   % the step between two line-numbers.        
+  numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. 
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+  fontadjust=true,
+  basicstyle=\ttfamily\footnotesize
+}
+
+\lstinputlisting{spin2.c}
+
+\end{document}
