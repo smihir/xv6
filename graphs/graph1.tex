@@ -15,12 +15,12 @@
 \center{Rashi Jalan, Mihir Shete}
 }\end{center}
 \begin{center}{\includegraphics[scale=0.5]{mlfq1.png}} \\
-{Figure 1} \\
+{Figure 1 \footnotesize{[1]}} \\
 \end{center}
 
 \textbf{Figure 1} represents the workloads of 2 processes p4 and p5.
-The process p4 runs an infinite while loop (see \textit{spin()}) and process p5 runs a loop 25000000 times and then sleeps for 5 ticks (see \textit{spin()}).
-The termination condition in the internal for loop in p5 is selected so that it calls sleep approximately after 1 timer tick. That is why we can see
+The process p4 runs an infinite while-loop (see \textit{spin()}) and process p5 runs a loop 25000000 times and then sleeps for 5 ticks (see \textit{spin1()}).
+The termination condition in the internal for-loop in p5 is selected so that it calls sleep approximately after 1 timer tick. That is why we can see
 in the graph that the p5 continues on level 2.
 
 %Stackoverflow http://stackoverflow.com/questions/4439605/c-source-code-in-latex-document
@@ -42,5 +42,6 @@ in the graph that the p5 continues on level 2.
 }
 
 \lstinputlisting{spin.c}
-
+\vfill
+\footnotesize{[1] These graphs were obtained by running tests on a vm with sigle cpu core} \\
 \end{document}
