@@ -40,7 +40,7 @@ exec(char *path, char **argv)
       continue;
     if(ph.memsz < ph.filesz)
       goto bad;
-    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz)) == 0)
+    if((sz = allocuvm(pgdir, sz, ph.va + ph.memsz + PGSIZE)) == 0)
       goto bad;
     if(loaduvm(pgdir, (char*)ph.va, ip, ph.offset, ph.filesz) < 0)
       goto bad;

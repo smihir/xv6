@@ -230,6 +230,7 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   char *mem;
   uint a;
+  int perm;
 
   if(newsz > USERTOP)
     return 0;
@@ -245,7 +246,11 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       return 0;
     }
     memset(mem, 0, PGSIZE);
-    mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), PTE_W|PTE_U);
+    if(a == 0)
+	perm = 0;
+    else
+	perm = PTE_W|PTE_U;
+    mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), perm);
   }
   return newsz;
 }
@@ -303,6 +308,7 @@ copyuvm(pde_t *pgdir, uint sz)
   pte_t *pte;
   uint pa, i;
   char *mem;
+  int perm;
 
   if((d = setupkvm()) == 0)
     return 0;
@@ -315,7 +321,11 @@ copyuvm(pde_t *pgdir, uint sz)
     if((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
+    if(i == 0)
+	perm = 0;
+    else
+	perm = PTE_W|PTE_U;
+    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), perm) < 0)
       goto bad;
   }
   return d;
