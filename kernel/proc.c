@@ -107,8 +107,10 @@ int
 growproc(int n)
 {
   uint sz;
-  
   sz = proc->sz;
+  if((sz + n) > (USERTOP - proc->sz_stack - PGSIZE))
+    return -1;
+
   if(n > 0){
     if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
