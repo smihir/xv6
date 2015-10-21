@@ -446,4 +446,16 @@ procdump(void)
   }
 }
 
+int growStack(void) {
+  uint sz;
+  sz = proc->sz_stack;
 
+  if((USERTOP - sz - PGSIZE) < (proc->sz + PGSIZE))
+    return -1;
+
+  if(allocuvm(proc->pgdir, USERTOP - sz - PGSIZE, USERTOP - sz) == 0)
+    return -1;
+
+  proc->sz_stack = sz + PGSIZE;
+  return 0;
+}
