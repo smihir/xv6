@@ -322,9 +322,9 @@ copyuvm(pde_t *pgdir, uint sz, uint sz_stack)
       goto bad;
     memmove(mem, (char*)pa, PGSIZE);
     if(i == 0)
-	perm = 0;
+	  perm = 0;
     else
-	perm = PTE_W|PTE_U;
+	  perm = PTE_W|PTE_U;
     if(mappages(d, (void*)i, PGSIZE, PADDR(mem), perm) < 0)
       goto bad;
   }

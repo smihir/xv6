@@ -446,7 +446,8 @@ procdump(void)
   }
 }
 
-int growStack(void) {
+int growstack(void)
+{
   uint sz;
   sz = proc->sz_stack;
 

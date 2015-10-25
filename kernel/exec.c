@@ -16,6 +16,7 @@ exec(char *path, char **argv)
   struct inode *ip;
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
+  uint nstack;
 
   if((ip = namei(path)) == 0)
     return -1;
@@ -51,12 +52,11 @@ exec(char *path, char **argv)
   // Allocate a one-page stack at the next page boundary
   sz = PGROUNDUP(sz);
 
-uint nstack;
   if((nstack = allocuvm(pgdir, USERTOP - PGSIZE, USERTOP)) == 0)
     goto bad;
 
   // Push argument strings, prepare rest of stack in ustack.
-sp = nstack;
+  sp = nstack;
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
       goto bad;

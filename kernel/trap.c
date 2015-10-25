@@ -84,7 +84,7 @@ trap(struct trapframe *tf)
       panic("trap");
     }
     if(tf->trapno == T_PGFLT) {
-      if(growStack() == 0) {
+      if(growstack() == 0) {
 	break;
       }
     }
