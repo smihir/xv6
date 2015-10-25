@@ -85,7 +85,7 @@ trap(struct trapframe *tf)
     }
     if(tf->trapno == T_PGFLT) {
       if(growstack() == 0) {
-	break;
+        break;
       }
     }
     // In user space, assume process misbehaved.
