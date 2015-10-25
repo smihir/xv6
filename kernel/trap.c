@@ -83,7 +83,7 @@ trap(struct trapframe *tf)
               tf->trapno, cpu->id, tf->eip, rcr2());
       panic("trap");
     }
-    if(tf->trapno == T_PGFLT) {
+    if(tf->trapno == T_PGFLT && tf->err == 6) {
       if(growstack() == 0) {
         break;
       }
