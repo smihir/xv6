@@ -16,7 +16,16 @@ USER_PROGS := \
 	tester\
 	usertests\
 	wc\
-	zombie
+	zombie\
+	null\
+	null-syscall\
+	badaddress-syscall\
+	small-stack\
+	stack-growth\
+	fault\
+	malloc\
+	overcommit-stack\
+	overcommit-heap\
 
 USER_PROGS := $(addprefix user/, $(USER_PROGS))
 
