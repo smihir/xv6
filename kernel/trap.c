@@ -83,7 +83,8 @@ trap(struct trapframe *tf)
               tf->trapno, cpu->id, tf->eip, rcr2());
       panic("trap");
     }
-    if(tf->trapno == T_PGFLT && tf->err == 6) {
+    uint faultaddr = rcr2();
+    if(tf->trapno == T_PGFLT && faultaddr <= USERTOP - proc->sz_stack && faultaddr > USERTOP - proc->sz_stack - PGSIZE) {
       if(growstack() == 0) {
         break;
       }
