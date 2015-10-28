@@ -83,8 +83,10 @@ trap(struct trapframe *tf)
               tf->trapno, cpu->id, tf->eip, rcr2());
       panic("trap");
     }
+
+    // Grow stack only for writes i.e err&0x2
     uint faultaddr = rcr2();
-    if(tf->trapno == T_PGFLT && faultaddr <= USERTOP - proc->sz_stack && faultaddr > USERTOP - proc->sz_stack - PGSIZE) {
+    if(tf->trapno == T_PGFLT && faultaddr <= USERTOP - proc->sz_stack && faultaddr > USERTOP - proc->sz_stack - PGSIZE && tf->err&0x2) {
       if(growstack() == 0) {
         break;
       }
