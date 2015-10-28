@@ -247,9 +247,9 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     }
     memset(mem, 0, PGSIZE);
     if(a == 0)
-	perm = 0;
+	  perm = 0;
     else
-	perm = PTE_W|PTE_U;
+	  perm = PTE_W|PTE_U;
     mappages(pgdir, (char*)a, PGSIZE, PADDR(mem), perm);
   }
   return newsz;
