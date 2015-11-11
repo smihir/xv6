@@ -84,6 +84,8 @@ userinit(void)
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+  p->isthread = 0;
+  p->numthreads = 0;
   p->sz = PGSIZE;
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
@@ -134,6 +136,8 @@ fork(void)
   if((np = allocproc()) == 0)
     return -1;
 
+  np->isthread = 0;
+  np->numthreads = 0;
   // Copy process state from p.
   if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
     kfree(np->kstack);
@@ -454,9 +458,12 @@ clone(void (*fcn)(void*), void *arg, void *stack)
   if((np = allocproc()) == 0)
     return -1;
 
+  //This is a thread
+  np->isthread = 1;
   np->pgdir = proc->pgdir;
   np->sz = proc->sz;
   np->parent = proc;
+  proc->numthreads++;
   *np->tf = *proc->tf;
 
   //Allocate stack
