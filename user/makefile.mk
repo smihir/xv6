@@ -26,7 +26,6 @@ USER_LIBS := \
 	usys.o\
 	printf.o\
 	umalloc.o\
-	tlib.o
 
 USER_LIBS := $(addprefix user/, $(USER_LIBS))
 
@@ -85,7 +84,7 @@ user/bin/%: user/%.o $(USER_LIBS) | user/bin
 
 # forktest has less library code linked in - needs to be small
 # in order to be able to max out the proc table.
-user/bin/forktest: user/forktest.o user/ulib.o user/usys.o | user/bin
+user/bin/forktest: user/forktest.o user/ulib.o user/usys.o user/umalloc.o | user/bin
 	$(LD) $(LDFLAGS) $(USER_LDFLAGS) --output=$@ $^
 
 # default recipe for object files
