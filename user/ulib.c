@@ -109,11 +109,11 @@ memmove(void *vdst, void *vsrc, int n)
 int
 thread_create(void (*start_routine)(void*), void *arg)
 {
-	void *tmp, *stack;
-	if((tmp = malloc(2 * PGSIZE)) == 0)
-		return -1;
-	//TODO: optimize this to free all the allocated space
-	stack = (void *)((uint)tmp + (PGSIZE - (uint)tmp % PGSIZE));
+	void *stack;
+	if((stack = malloc(2 * PGSIZE)) == 0)
+                return -1;
+        if((uint)stack % PGSIZE != 0)
+                stack = (void *)((uint)stack + (PGSIZE - (uint)stack % PGSIZE));
 	return clone(start_routine, arg, stack);
 }
 
