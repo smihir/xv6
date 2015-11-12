@@ -125,21 +125,20 @@ thread_join()
 	free(stack);
 	return ret;
 }
-
 void
 lock_init(lock_t *lk)
 {
-
+	lk->flag = 0;
 }
 
 void
 lock_acquire(lock_t *lk)
 {
-
+	while(xchg(&lk->flag, 1) != 0);
 }
 
 void
 lock_release(lock_t *lk)
 {
-
+	lk->flag = 0;
 }
