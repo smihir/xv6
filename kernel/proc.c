@@ -453,6 +453,8 @@ clone(void (*fcn)(void*), void *arg, void *stack)
   struct proc *np;
   uint sp, ustack[2];
 
+  if((uint)stack % PGSIZE != 0 || (uint)stack > proc->sz || (uint)stack + PGSIZE > proc->sz)
+    return -1;
   // Allocate process.
   if((np = allocproc()) == 0)
     return -1;
