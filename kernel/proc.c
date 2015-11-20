@@ -486,7 +486,7 @@ clone(void (*fcn)(void*), void *arg, void *stack)
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
   np->tf->esp = sp;
-  np->tf->ebp = sp;
+  np->threadstack = (uint)stack;
   np->tf->eip = (uint)fcn;
 
   for(i = 0; i < NOFILE; i++)
@@ -516,7 +516,7 @@ join(void **stack)
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
-	*stack = (void*)(p->tf->ebp - PGSIZE + 12);
+	*stack = (void*)(p->threadstack);
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
