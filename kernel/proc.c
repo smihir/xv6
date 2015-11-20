@@ -200,7 +200,7 @@ exit(void)
   wakeup1(proc->parent);
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->parent == proc){
+    if(p->parent == proc && p->isthread != 1){
       p->parent = initproc;
       if(p->state == ZOMBIE)
         wakeup1(initproc);
@@ -226,7 +226,7 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->parent != proc || p->isthread == 1)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -463,6 +463,7 @@ clone(void (*fcn)(void*), void *arg, void *stack)
 
   if((uint)stack % PGSIZE != 0 || (uint)stack > proc->sz || (uint)stack + PGSIZE > proc->sz)
     return -1;
+
   // Allocate process.
   if((np = allocproc()) == 0)
     return -1;
@@ -510,7 +511,7 @@ join(void **stack)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->parent != proc || p->isthread != 1)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
