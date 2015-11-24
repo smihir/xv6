@@ -307,6 +307,41 @@ iunlockput(struct inode *ip)
   iput(ip);
 }
 
+
+int
+calchecksum(uchar *addr, uint n)
+{
+  int i, checksum;
+  checksum = 0;
+  for(i = 0; i < n; i++){
+    checksum ^= addr[i];
+  }
+  return checksum;
+}
+
+
+void
+updatechecksum(struct inode *ip, uint bn, uint checksum)
+{
+  uint *a, addr;
+  struct buf *bp;
+
+  if(bn < NDIRECT){
+    ip->addrs[bn] &= 0x00FFFFFF;
+    ip->addrs[bn] |= (checksum << 24);
+  }
+  bn -= NDIRECT;
+  if(bn < NINDIRECT){
+    addr = ip->addrs[NDIRECT];
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    a[bn] &= 0x00FFFFFF;
+    a[bn] |= (checksum << 24);
+    bwrite(bp);
+    brelse(bp);
+  }
+}
+
 // Inode contents
 //
 // The contents (data) associated with each inode is stored
@@ -325,6 +360,8 @@ bmap(struct inode *ip, uint bn)
   if(bn < NDIRECT){
     if((addr = ip->addrs[bn]) == 0)
       ip->addrs[bn] = addr = balloc(ip->dev);
+    if(ip->type == T_CHECKED)
+  	addr &= 0x00FFFFFF;
     return addr;
   }
   bn -= NDIRECT;
@@ -333,6 +370,8 @@ bmap(struct inode *ip, uint bn)
     // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+    if(ip->type == T_CHECKED)
+      addr &= 0x00FFFFFF;
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn]) == 0){
@@ -340,6 +379,8 @@ bmap(struct inode *ip, uint bn)
       bwrite(bp);
     }
     brelse(bp);
+    if(ip->type == T_CHECKED)
+      addr &= 0x00FFFFFF;
     return addr;
   }
 
@@ -421,7 +462,7 @@ readi(struct inode *ip, char *dst, uint off, uint n)
 int
 writei(struct inode *ip, char *src, uint off, uint n)
 {
-  uint tot, m;
+  uint tot, m, checksum;
   struct buf *bp;
 
   if(ip->type == T_DEV){
@@ -439,6 +480,11 @@ writei(struct inode *ip, char *src, uint off, uint n)
     bp = bread(ip->dev, bmap(ip, off/BSIZE));
     m = min(n - tot, BSIZE - off%BSIZE);
     memmove(bp->data + off%BSIZE, src, m);
+
+    if(ip->type == T_CHECKED){
+      checksum = calchecksum(bp->data, BSIZE);
+      updatechecksum(ip, off/BSIZE, checksum);
+    }
     bwrite(bp);
     brelse(bp);
   }
