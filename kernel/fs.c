@@ -366,6 +366,49 @@ getchecksum(struct inode *ip, uint bn)
 
   return checksum;
 }
+
+
+unsigned int
+getfilechecksum(struct inode *ip)
+{
+  uint addr, *a;
+  struct buf *bp;
+  uint i, bn;
+  uint checksum = 0;
+
+  if(ip->type != T_CHECKED) {
+    return 0;
+  }
+
+  for(i=0; i<NDIRECT+NINDIRECT; i++){
+    bn = i;
+
+    if(bn < NDIRECT){
+      if((addr = ip->addrs[bn]) == 0){
+        return checksum;
+      }else{
+        checksum ^= (addr & 0xFF000000) >> 24;
+      }
+    }
+    bn -= NDIRECT;
+
+    if(bn < NINDIRECT){
+      // Load indirect block, allocating if necessary.
+      if((addr = ip->addrs[NDIRECT]) == 0)
+        return checksum;
+
+      bp = bread(ip->dev, addr);
+      a = (uint*)bp->data;
+      if((addr = a[bn]) == 0){
+        return checksum;
+      }
+      brelse(bp);
+
+      checksum ^= (addr & 0xFF000000) >> 24;
+    }
+  }
+  return checksum;
+}
 // Inode contents
 //
 // The contents (data) associated with each inode is stored
@@ -467,6 +510,7 @@ stati(struct inode *ip, struct stat *st)
   st->type = ip->type;
   st->nlink = ip->nlink;
   st->size = ip->size;
+  st->checksum = getfilechecksum(ip);
 }
 
 // Read data from inode.
