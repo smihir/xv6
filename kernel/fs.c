@@ -308,10 +308,11 @@ iunlockput(struct inode *ip)
 }
 
 
-int
+unsigned int
 calchecksum(uchar *addr, uint n)
 {
-  int i, checksum;
+  int i;
+  unsigned int checksum;
   checksum = 0;
   for(i = 0; i < n; i++){
     checksum ^= addr[i];
@@ -342,6 +343,29 @@ updatechecksum(struct inode *ip, uint bn, uint checksum)
   }
 }
 
+unsigned int
+getchecksum(struct inode *ip, uint bn)
+{
+  uint *a, addr;
+  struct buf *bp;
+  unsigned int checksum = 0x100; //default values is error
+
+  if(bn < NDIRECT){
+    checksum = ip->addrs[bn] & 0xFF000000;
+    return checksum >> 24;
+  }
+  bn -= NDIRECT;
+  if(bn < NINDIRECT){
+    addr = ip->addrs[NDIRECT];
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    checksum = a[bn] & 0xFF000000;
+    brelse(bp);
+    return checksum >> 24;
+  }
+
+  return checksum;
+}
 // Inode contents
 //
 // The contents (data) associated with each inode is stored
@@ -358,10 +382,19 @@ bmap(struct inode *ip, uint bn)
   struct buf *bp;
 
   if(bn < NDIRECT){
-    if((addr = ip->addrs[bn]) == 0)
-      ip->addrs[bn] = addr = balloc(ip->dev);
-    if(ip->type == T_CHECKED)
-  	addr &= 0x00FFFFFF;
+    if(ip->type == T_CHECKED) {
+      if((addr = ip->addrs[bn]) == 0){
+        ip->addrs[bn] = addr = balloc(ip->dev);
+        if ((addr & 0xFF000000) != 0) {
+            panic("direct checked bmap: out of range");
+        }
+      }else{
+        addr &= 0x00FFFFFF;
+      }
+    }else{
+      if((addr = ip->addrs[bn]) == 0)
+        ip->addrs[bn] = addr = balloc(ip->dev);
+    }
     return addr;
   }
   bn -= NDIRECT;
@@ -370,17 +403,22 @@ bmap(struct inode *ip, uint bn)
     // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT]) == 0)
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
-    if(ip->type == T_CHECKED)
-      addr &= 0x00FFFFFF;
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     if((addr = a[bn]) == 0){
       a[bn] = addr = balloc(ip->dev);
+
+      if(ip->type == T_CHECKED) {
+        if ((addr & 0xFF000000) != 0) {
+          panic("ndirect checked bmap: out of range");
+        }
+      }
       bwrite(bp);
     }
     brelse(bp);
-    if(ip->type == T_CHECKED)
+    if(ip->type == T_CHECKED){
       addr &= 0x00FFFFFF;
+    }
     return addr;
   }
 
@@ -437,6 +475,7 @@ readi(struct inode *ip, char *dst, uint off, uint n)
 {
   uint tot, m;
   struct buf *bp;
+  unsigned int checksum, rchecksum;
 
   if(ip->type == T_DEV){
     if(ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].read)
@@ -450,7 +489,19 @@ readi(struct inode *ip, char *dst, uint off, uint n)
     n = ip->size - off;
 
   for(tot=0; tot<n; tot+=m, off+=m, dst+=m){
-    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+    uint addr = bmap(ip, off/BSIZE);
+    bp = bread(ip->dev, addr);
+
+    if(ip->type == T_CHECKED){
+        checksum = calchecksum(bp->data, BSIZE);
+        rchecksum = getchecksum(ip, off/BSIZE);
+        //cprintf("bn: %d, addr: %x, csum: %d rcum: %d\n", off/BSIZE, addr, checksum, rchecksum);
+        if(checksum != rchecksum){
+          brelse(bp);
+          return -1;
+        }
+    }
+
     m = min(n - tot, BSIZE - off%BSIZE);
     memmove(dst, bp->data + off%BSIZE, m);
     brelse(bp);
@@ -483,6 +534,7 @@ writei(struct inode *ip, char *src, uint off, uint n)
 
     if(ip->type == T_CHECKED){
       checksum = calchecksum(bp->data, BSIZE);
+      //cprintf("write csum: %d\n", checksum);
       updatechecksum(ip, off/BSIZE, checksum);
     }
     bwrite(bp);
